@@ -1,19 +1,16 @@
 const { Sequelize } = require("sequelize");
-require("dotenv").config();
 
 const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASS,
+  process.env.DB_NAME,     // train_ticketing
+  process.env.DB_USER,     // trainuser
+  process.env.DB_PASSWORD, // yourpassword
   {
-    host: process.env.DB_HOST,
+    host: process.env.DB_HOST || "localhost",
     dialect: "mysql",
-    logging: false,
+    port: process.env.DB_PORT || 3306,
+    logging: false
   }
 );
 
-sequelize.authenticate()
-  .then(() => console.log("✅ Connected to AWS RDS MySQL"))
-  .catch(err => console.error("❌ Error:", err));
-
 module.exports = sequelize;
+
