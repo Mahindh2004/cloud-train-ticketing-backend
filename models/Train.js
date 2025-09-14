@@ -12,10 +12,10 @@ const Train = sequelize.define(
     train_name: { type: DataTypes.STRING, allowNull: false },
     source: { type: DataTypes.STRING, allowNull: false },
     destination: { type: DataTypes.STRING, allowNull: false },
+    total_seats: { type: DataTypes.INTEGER, allowNull: false },
     departure_time: { type: DataTypes.STRING, allowNull: false },
     arrival_time: { type: DataTypes.STRING, allowNull: false },
     base_fare: { type: DataTypes.INTEGER, allowNull: false },
-    total_seats: { type: DataTypes.INTEGER, allowNull: false },
   },
   {
     tableName: "Trains",
