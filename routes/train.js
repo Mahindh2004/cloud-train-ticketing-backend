@@ -14,10 +14,21 @@ router.post("/", auth, async (req, res) => {
   }
 });
 
-// Get All Trains
+// Get Trains with optional filters
 router.get("/", async (req, res) => {
-  const trains = await Train.findAll();
-  res.json(trains);
+  try {
+    const { source, destination, date } = req.query;
+
+    let whereClause = {};
+    if (source) whereClause.source = source;
+    if (destination) whereClause.destination = destination;
+    if (date) whereClause.travel_date = date;
+
+    const trains = await Train.findAll({ where: whereClause });
+    res.json(trains);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;
