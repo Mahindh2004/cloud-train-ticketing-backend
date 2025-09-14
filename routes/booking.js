@@ -4,31 +4,33 @@ const Train = require("../models/Train");
 const auth = require("../middleware/auth");
 const router = express.Router();
 
+// Book a train
 router.post("/:trainId", auth, async (req, res) => {
   try {
-    const { date } = req.body;
+    const { date, seats } = req.body; // seats user wants
     const { trainId } = req.params;
 
     const train = await Train.findByPk(trainId);
     if (!train) return res.status(404).json({ msg: "Train not found" });
 
-    let booking = await Booking.findOne({ where: { train_id: trainId, travel_date: date } });
-
-    if (!booking) {
-      // create booking for this train/date
-      booking = await Booking.create({
-        train_id: trainId,
-        travel_date: date,
-        seats_available: train.total_seats,
-        status: "Booked",
-        user_id: req.user.user_id, // current logged-in user
-      });
+    // Check seat availability
+    if (train.seats_available < seats) {
+      return res.status(400).json({ msg: "Not enough seats available" });
     }
 
-    if (booking.seats_available <= 0) return res.status(400).json({ msg: "No seats available" });
+    // Create booking
+    const booking = await Booking.create({
+      train_id: trainId,
+      user_id: req.user.id,
+      travel_date: date,
+      seats_booked: seats,
+      status: "Booked",
+    });
 
-    booking.seats_available -= 1;
-    await booking.save();
+    // Update train seat count
+    await train.update({
+      seats_available: train.seats_available - seats,
+    });
 
     res.json({ msg: "Ticket booked", booking });
   } catch (err) {
@@ -38,5 +40,4 @@ router.post("/:trainId", auth, async (req, res) => {
 });
 
 module.exports = router;
-
 
