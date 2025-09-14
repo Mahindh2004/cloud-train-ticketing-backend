@@ -4,43 +4,38 @@ const Train = require("../models/Train");
 const auth = require("../middleware/auth");
 const router = express.Router();
 
-// Book a Train
-router.post("/:train_id", auth, async (req, res) => {
+router.post("/:trainId", auth, async (req, res) => {
   try {
-    const train = await Train.findByPk(req.params.train_id);
-    if (!train || train.seats_available <= 0) {
+    const { date } = req.body;
+    const { trainId } = req.params;
+
+    let booking = await Booking.findOne({
+      where: { train_id: trainId, travel_date: date },
+    });
+
+    if (!booking) {
+      const train = await Train.findByPk(trainId);
+      if (!train) return res.status(404).json({ msg: "Train not found" });
+
+      booking = await Booking.create({
+        train_id: trainId,
+        travel_date: date,
+        seats_available: train.total_seats,
+      });
+    }
+
+    if (booking.seats_available <= 0) {
       return res.status(400).json({ msg: "No seats available" });
     }
 
-    train.seats_available -= 1;
-    await train.save();
+    booking.seats_available -= 1;
+    await booking.save();
 
-    const booking = await Booking.create({
-      user_id: req.user.id,
-      train_id: train.train_id,
-      status: "Booked"
-    });
-
-    res.json(booking);
+    res.json({ msg: "Ticket booked", booking });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// View My Bookings
-router.get("/", auth, async (req, res) => {
-  const bookings = await Booking.findAll({ where: { user_id: req.user.id }, include: [Train] });
-  res.json(bookings);
-});
-
-// Cancel Booking
-router.put("/cancel/:id", auth, async (req, res) => {
-  const booking = await Booking.findByPk(req.params.id);
-  if (!booking || booking.user_id !== req.user.id) return res.status(403).json({ msg: "Not authorized" });
-
-  booking.status = "Cancelled";
-  await booking.save();
-  res.json(booking);
-});
-
 module.exports = router;
+
