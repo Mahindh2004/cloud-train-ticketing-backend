@@ -24,6 +24,11 @@ const Booking = sequelize.define("Booking", {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
+  status: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: "Booked",
+  },
 });
 
 // associations
