@@ -13,21 +13,22 @@ router.post("/:trainId", auth, async (req, res) => {
     const train = await Train.findByPk(trainId);
     if (!train) return res.status(404).json({ msg: "Train not found" });
 
-    if (train.seats_available < seats) {
+    // Check available seats using total_seats
+    if (train.total_seats < seats) {
       return res.status(400).json({ msg: "Not enough seats available" });
     }
 
     // Create booking
     const booking = await Booking.create({
       train_id: trainId,
-      user_id: req.user.user_id,
+      user_id: req.user.id, // 👈 switched from user_id
       travel_date: date,
       seats_booked: seats,
       status: "Booked",
     });
 
-    // Decrease available seats in Train table
-    await train.update({ seats_available: train.seats_available - seats });
+    // Decrease seats directly from total_seats
+    await train.update({ total_seats: train.total_seats - seats });
 
     res.json({ msg: "Booking successful", booking });
   } catch (err) {
