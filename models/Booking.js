@@ -11,7 +11,8 @@ const Booking = sequelize.define(
     user_id: { type: DataTypes.INTEGER, allowNull: false, references: { model: User, key: "user_id" } },
     train_id: { type: DataTypes.INTEGER, allowNull: false, references: { model: Train, key: "train_id" } },
     travel_date: { type: DataTypes.DATEONLY, allowNull: false },
-    seats_available: { type: DataTypes.INTEGER, allowNull: false },
+    seats_booked: { type: DataTypes.INTEGER, allowNull: false },
+
     
   },
   { tableName: "Bookings", timestamps: false }
