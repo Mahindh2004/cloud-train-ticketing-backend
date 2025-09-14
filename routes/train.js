@@ -1,4 +1,5 @@
 const express = require("express");
+const { Op } = require("sequelize");
 const Train = require("../models/Train");
 const Booking = require("../models/Booking");
 const auth = require("../middleware/auth");
@@ -13,6 +14,7 @@ router.post("/", auth, async (req, res) => {
     const train = await Train.create(req.body);
     res.json(train);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -21,6 +23,7 @@ router.post("/", auth, async (req, res) => {
 router.get("/", async (req, res) => {
   try {
     const { source, destination, date } = req.query;
+    const travelDate = date || new Date().toISOString().split("T")[0];
 
     let trains = await Train.findAll({
       where: {
@@ -29,32 +32,38 @@ router.get("/", async (req, res) => {
       },
     });
 
-    const results = [];
-    for (const train of trains) {
-      let booking = await Booking.findOne({
-        where: { train_id: train.train_id, travel_date: date },
-      });
-
-      if (!booking) {
-        booking = await Booking.create({
-          train_id: train.train_id,
-          travel_date: date,
-          seats_available: train.total_seats,
+    const results = await Promise.all(
+      trains.map(async (train) => {
+        let booking = await Booking.findOne({
+          where: { train_id: train.train_id, travel_date: travelDate },
         });
-      }
 
-      results.push({
-        ...train.toJSON(),
-        travel_date: booking.travel_date,
-        seats_available: booking.seats_available,
-      });
-    }
+        if (!booking) {
+          // Placeholder user_id = 1 for system booking
+          booking = await Booking.create({
+            train_id: train.train_id,
+            travel_date: travelDate,
+            seats_available: train.total_seats,
+            status: "Booked",
+            user_id: 1,
+          });
+        }
+
+        return {
+          ...train.toJSON(),
+          travel_date: booking.travel_date,
+          seats_available: booking.seats_available,
+        };
+      })
+    );
 
     res.json(results);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
 
 module.exports = router;
+
 
