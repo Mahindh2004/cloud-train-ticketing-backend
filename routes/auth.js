@@ -1,59 +1,36 @@
 const express = require("express");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+const Booking = require("../models/Booking");
+const Train = require("../models/Train");
+const auth = require("../middleware/auth");
 const router = express.Router();
 
-// Signup (auto-login)
-router.post("/signup", async (req, res) => {
+// Book a train
+router.post("/:id", auth, async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { id } = req.params;
+    const { date } = req.body; // booking date from frontend
+    const userId = req.user.id; // from auth middleware
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const train = await Train.findByPk(id);
+    if (!train) return res.status(404).json({ msg: "Train not found" });
 
-    // Create user
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      role: role || "user",
+    // Create booking
+    const booking = await Booking.create({
+      train_id: id,
+      user_id: userId,
+      travel_date: date,
+      seats_available: train.seats_available - 1,
+      status: "Booked",
     });
 
-    // Generate token immediately after signup
-    const token = jwt.sign(
-      { id: user.user_id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
+    // Decrease available seats
+    await train.update({ seats_available: train.seats_available - 1 });
 
-    res.json({ token, user });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Login
-router.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    const user = await User.findOne({ where: { email } });
-    if (!user) return res.status(400).json({ msg: "User not found" });
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ msg: "Invalid credentials" });
-
-    const token = jwt.sign(
-      { id: user.user_id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-
-    res.json({ token, user });
+    res.json({ msg: "Booking successful", booking });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
 module.exports = router;
+
