@@ -1,36 +1,69 @@
 const express = require("express");
-const Booking = require("../models/Booking");
-const Train = require("../models/Train");
-const auth = require("../middleware/auth");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const User = require("../models/User"); // Sequelize User model
 const router = express.Router();
 
-// Book a train
-router.post("/:id", auth, async (req, res) => {
+// ------------------------
+// SIGNUP
+// ------------------------
+router.post("/signup", async (req, res) => {
+  const { name, email, password } = req.body;
+
+  if (!name || !email || !password)
+    return res.status(400).json({ message: "All fields are required" });
+
   try {
-    const { id } = req.params;
-    const { date } = req.body; // booking date from frontend
-    const userId = req.user.id; // from auth middleware
+    // Check if email already exists
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser)
+      return res.status(400).json({ message: "Email already registered" });
 
-    const train = await Train.findByPk(id);
-    if (!train) return res.status(404).json({ msg: "Train not found" });
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create booking
-    const booking = await Booking.create({
-      train_id: id,
-      user_id: userId,
-      travel_date: date,
-      seats_available: train.seats_available - 1,
-      status: "Booked",
+    // Create user
+    const user = await User.create({ name, email, password: hashedPassword });
+
+    // Generate JWT token
+    const token = jwt.sign({ user_id: user.user_id }, "secret_key", {
+      expiresIn: "2h",
     });
 
-    // Decrease available seats
-    await train.update({ seats_available: train.seats_available - 1 });
-
-    res.json({ msg: "Booking successful", booking });
+    res.status(201).json({ token, user_id: user.user_id });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Signup failed", error: err.message });
+  }
+});
+
+// ------------------------
+// LOGIN
+// ------------------------
+router.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password)
+    return res.status(400).json({ message: "All fields are required" });
+
+  try {
+    const user = await User.findOne({ where: { email } });
+    if (!user) return res.status(400).json({ message: "Invalid email" });
+
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) return res.status(400).json({ message: "Invalid password" });
+
+    const token = jwt.sign({ user_id: user.user_id }, "secret_key", {
+      expiresIn: "2h",
+    });
+
+    res.json({ token, user_id: user.user_id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Login failed", error: err.message });
   }
 });
 
 module.exports = router;
+
 
