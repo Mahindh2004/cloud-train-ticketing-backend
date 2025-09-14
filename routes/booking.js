@@ -21,7 +21,7 @@ router.post("/:trainId", auth, async (req, res) => {
     // Create booking
     const booking = await Booking.create({
       train_id: trainId,
-      user_id: req.user.id, // 👈 switched from user_id
+      user_id: req.user.user_id, // 👈 switched from user_id
       travel_date: date,
       seats_booked: seats,
       status: "Booked",

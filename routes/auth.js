@@ -31,9 +31,9 @@ router.post("/signup", async (req, res) => {
       role: role || "user",
     });
 
-    // Generate token
+    // Generate token with user_id
     const token = jwt.sign(
-      { id: user.user_id, role: user.role },
+      { user_id: user.user_id, role: user.role },
       process.env.JWT_SECRET || "secret_key",
       { expiresIn: "2h" }
     );
@@ -61,8 +61,9 @@ router.post("/login", async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
 
+    // Generate token with user_id
     const token = jwt.sign(
-      { id: user.user_id, role: user.role },
+      { user_id: user.user_id, role: user.role },
       process.env.JWT_SECRET || "secret_key",
       { expiresIn: "2h" }
     );
@@ -75,6 +76,7 @@ router.post("/login", async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
