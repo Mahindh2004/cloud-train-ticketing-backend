@@ -13,7 +13,11 @@ const trainRoutes = require("./routes/train");
 const bookingRoutes = require("./routes/booking");
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: "*",  // or "http://localhost:3000"
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.use(bodyParser.json());
 
 app.use("/api/auth", authRoutes);
