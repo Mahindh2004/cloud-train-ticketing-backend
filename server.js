@@ -23,7 +23,8 @@ app.use("/api/bookings", bookingRoutes);
 sequelize.sync().then(() => console.log("✅ Database synced"));
 
 const PORT = 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, "0.0.0.0", () => console.log(`🚀 Server running on port ${PORT}`));
+
 
 
 
